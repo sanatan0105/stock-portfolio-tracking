@@ -2,18 +2,20 @@ let createError = require('http-errors');
 let express = require('express');
 let path = require('path');
 let cookieParser = require('cookie-parser');
-let logger = require('morgan');
-
+let morgan = require('morgan');
+const winston = require('./config/Winston');
 let indexRouter = require('./routes/index');
 let usersRouter = require('./routes/users');
-
+require('dotenv').config({path: './config/.env'});
 let app = express();
 
-// view engine setup
-app.set('views', path.join(__dirname, 'views'));
-app.set('view engine', 'pug');
+app.use(morgan('combined', { stream: winston.stream }));
 
-app.use(logger('dev'));
+// view engine setup
+// app.set('views', path.join(__dirname, 'views'));
+// app.set('view engine', 'pug');
+
+// app.use(logger('dev'));
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
 app.use(cookieParser());
