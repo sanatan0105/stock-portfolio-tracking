@@ -3,7 +3,7 @@ let Router = express.Router();
 
 const SecurityHelper = require('../controller/SecurityHelper');
 const ReturnHandler = require('../lib/ReturnHandler');
-/* GET home page. */
+
 Router.post('/create', async (req, res) => {
     let companyName = req.body.companyName;
     let ticketSymbol = req.body.ticketSymbol;
