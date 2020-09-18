@@ -20,13 +20,17 @@ const portfolioModel = mongoose.Schema({
             tradeId: {
                 type: mongoose.Schema.Types.ObjectId
             },
-            buyPrice: {
+            price: {
                 type: Number,
                 required: true
             },
             numberOfShares: {
                 type: Number,
                 required: true
+            },
+            buyOrSell: {
+                type: String,
+                enum: ['sell', 'buy']
             },
             dateOfPurchase: {
                 type: Date

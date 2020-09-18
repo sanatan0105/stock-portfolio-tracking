@@ -1,6 +1,5 @@
 const ErrorHandler = require("../lib/ErrorHandler");
 const InputValidator = require('../lib/InputValidator');
-// const Config = require('../config/config');
 const SecurityModel = require('../model/SecurityModel');
 const PortfolioModel = require('../model/PortfolioModel');
 const CommonMethod = require('../lib/CommonMethods');
@@ -9,37 +8,21 @@ const Winston = require('../config/Winston');
 const CURRENT_PRICE = 100;
 
 module.exports = {
-
-    PlaceTrade: async (symbol, sharePrice, numberOfShares) => {
+    BuyTrade: async (symbol, sharePrice, numberOfShares) => {
         try {
-            // validate the input
-            let _validateSharePrice = InputValidator.ValidateSharePrice(sharePrice);
-            if (_validateSharePrice.status === 'failed')
-                return ErrorHandler.userDefinedError(400, _validateSharePrice.message);
-            if (_validateSharePrice.status === 'failedInCatch')
-                return ErrorHandler.parseError(_validateSharePrice.message);
-
-            if (!InputValidator.ValidateQuantity(numberOfShares))
-                return ErrorHandler.userDefinedError(400, 'invalid number of shares. Only positive numbers are allowed');
-
-            let _validateSymbol = InputValidator.ValidateTicketSymbol(symbol);
-            if (_validateSymbol.status === 'failed')
-                return ErrorHandler.userDefinedError(400, _validateSymbol.message);
-            if (_validateSymbol.status === 'failedInCatch')
-                return ErrorHandler.parseError(_validateSymbol.message);
-
-            symbol = symbol.toUpperCase();
-            let securityObj = await SecurityModel.findOne({ticketSymbol: symbol});
-            if (!securityObj)
-                return ErrorHandler.userDefinedError(400, `Security with symbol ${symbol} not found in the record`);
-
+            let validationResult = await module.exports.validateTrade(symbol, numberOfShares, true, sharePrice);
+            if (validationResult.status === 'failed')
+                return ErrorHandler.userDefinedError(400, validationResult.message);
+            if (validationResult.status === 'failedInCatch')
+                return ErrorHandler.parseError(validationResult.message);
+            let securityObj =  validationResult.securityObj;
             let portfolioObj = await PortfolioModel.findOne({security: securityObj._id});
             if (!portfolioObj) {
                 // create new portfolio
                 portfolioObj = module.exports.createNewPortfolio(securityObj._id, sharePrice, numberOfShares);
                 await portfolioObj.save();
             } else {
-                let newTradeObj = module.exports.createTradeObj(sharePrice, numberOfShares);
+                let newTradeObj = module.exports.createTradeObj(sharePrice, numberOfShares, 'buy');
                 let newAvgSharePrice = module.exports.getNewAverageBuyPrice(
                     portfolioObj.averageBuyPrice, portfolioObj.numberOfShares, sharePrice, numberOfShares);
                 let updatedNumberOfShares = portfolioObj.numberOfShares + numberOfShares;
@@ -48,7 +31,34 @@ module.exports = {
                 portfolioObj.trade.push(newTradeObj);
                 await portfolioObj.save();
             }
-            return {status: 'success', message: 'trade added', other: portfolioObj}
+            return {status: 'success', message: 'trade purchased', other: portfolioObj}
+        } catch (e) {
+            return ErrorHandler.parseError(e);
+        }
+    },
+
+    SellTrade: async (symbol, numberOfShares) => {
+        try {
+            let validationResult = await module.exports.validateTrade(symbol, numberOfShares, false);
+            if (validationResult.status === 'failed')
+                return ErrorHandler.userDefinedError(400, validationResult.message);
+            if (validationResult.status === 'failedInCatch')
+                return ErrorHandler.parseError(validationResult.message);
+            let securityObj =  validationResult.securityObj;
+            let portfolioObj = await PortfolioModel.findOne({security: securityObj._id});
+
+            if(!portfolioObj)
+                return ErrorHandler.userDefinedError(400, 'security not found in the portfolio');
+
+            if (portfolioObj.numberOfShares < numberOfShares)
+                return ErrorHandler.userDefinedError(400, 'not enough share to sell');
+
+            let newTradeObj = module.exports.createTradeObj(portfolioObj.averageBuyPrice, numberOfShares, 'sell');
+            portfolioObj.trade.push(newTradeObj);
+            portfolioObj.numberOfShares = portfolioObj.numberOfShares - numberOfShares;
+            await portfolioObj.save();
+            return {status: 'success', message: 'trade sold', other: portfolioObj}
+
         } catch (e) {
             return ErrorHandler.parseError(e);
         }
@@ -69,7 +79,7 @@ module.exports = {
             let portfolio = await PortfolioModel.find()
                 .select('averageBuyPrice numberOfShares security')
                 .populate('security', 'ticketSymbol sharePrice');
-            let totalReturn  = module.exports.CalculateReturn(portfolio);
+            let totalReturn = module.exports.CalculateReturn(portfolio);
             return {status: 'success', message: totalReturn};
 
         } catch (e) {
@@ -77,27 +87,29 @@ module.exports = {
         }
     },
 
-    createNewPortfolio: (securityId, buyPrice, numberOfShare) => {
-        let tradeObj = module.exports.createTradeObj(buyPrice, numberOfShare);
-        return new PortfolioModel({
-            security: securityId,
-            averageBuyPrice: buyPrice,
-            numberOfShares: numberOfShare,
-            trade: [tradeObj]
-        })
-    },
+    GetHolding: async () => {
+        try {
+            let portfolioObj = await PortfolioModel.find().select('averageBuyPrice numberOfShares');
+            let totalShares = 0;
+            let totalSecurities = 0;
+            let averageSharePrice = 0;
 
-    createTradeObj: (buyPrice, numberOfShare) => {
-        return {
-            tradeId: CommonMethod.generateId(),
-            buyPrice: buyPrice,
-            numberOfShares: numberOfShare,
-            dateOfPurchase: new Date()
+            portfolioObj.forEach(portfolio => {
+                totalSecurities += 1;
+                totalShares += portfolio.numberOfShares;
+                averageSharePrice += portfolio.averageBuyPrice
+            });
+
+            let averagePrice = averageSharePrice / totalShares;
+
+            return {
+                status: 'success',
+                message: {totalSecurities: totalSecurities, totalShares: totalShares, averagePrice: averagePrice}
+            };
+
+        } catch (e) {
+            return ErrorHandler.parseError(e);
         }
-    },
-
-    getNewAverageBuyPrice: (oldAvgPrice, oldNumberOfShares, newSharePrice, newNumberOfShares) => {
-        return (oldAvgPrice * oldNumberOfShares + newNumberOfShares * newSharePrice) / (oldNumberOfShares + newNumberOfShares)
     },
 
     CalculateReturn: (portfolioObj) => {
@@ -114,6 +126,56 @@ module.exports = {
         } catch (e) {
             return {status: 'failedInCatch', message: e};
         }
+    },
+
+    validateTrade: async (symbol, numberOfShares, shouldValidatePrice, sharePrice = 0) => {
+        try {
+            if(shouldValidatePrice){
+                let _validateSharePrice = InputValidator.ValidateSharePrice(sharePrice);
+                if (_validateSharePrice.status === 'failed' || _validateSharePrice.status === 'failedInCatch')
+                    return _validateSharePrice;
+            }
+            if (!InputValidator.ValidateQuantity(numberOfShares))
+                return {status: 'failed', message: 'invalid number of shares. Only positive numbers are allowed'};
+            let _validateSymbol = InputValidator.ValidateTicketSymbol(symbol);
+            if (_validateSymbol.status === 'failed' || _validateSymbol.status === 'failedInCatch')
+                return _validateSymbol;
+
+            symbol = symbol.toUpperCase();
+            let securityObj = await SecurityModel.findOne({ticketSymbol: symbol});
+            if (!securityObj)
+                return {status: 'failed', message: `Security with symbol ${symbol} not found in the record`};
+
+            return {status: 'success', message: 'object verified', securityObj};
+
+
+        } catch (e) {
+            return {status: 'failedInCatch', message: e};
+        }
+    },
+
+    createNewPortfolio: (securityId, buyPrice, numberOfShare) => {
+        let tradeObj = module.exports.createTradeObj(buyPrice, numberOfShare, 'buy');
+        return new PortfolioModel({
+            security: securityId,
+            averageBuyPrice: buyPrice,
+            numberOfShares: numberOfShare,
+            trade: [tradeObj]
+        })
+    },
+
+    createTradeObj: (price, numberOfShare, buyOrSell) => {
+        return {
+            tradeId: CommonMethod.generateId(),
+            price: price,
+            numberOfShares: numberOfShare,
+            buyOrSell: buyOrSell,
+            dateOfPurchase: new Date()
+        }
+    },
+
+    getNewAverageBuyPrice: (oldAvgPrice, oldNumberOfShares, newSharePrice, newNumberOfShares) => {
+        return (oldAvgPrice * oldNumberOfShares + newNumberOfShares * newSharePrice) / (oldNumberOfShares + newNumberOfShares)
     },
 
     getCurrentPriceOfSecurity: (securitySymbol) => {

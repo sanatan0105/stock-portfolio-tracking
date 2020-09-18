@@ -14,4 +14,9 @@ Router.get('/getReturn', async (req, res)=>{
     ReturnHandler.returnHandler(ret, res);
 });
 
+Router.get('/getHolding', async (req, res)=>{
+    let ret = await TradeHelper.GetHolding();
+    ReturnHandler.returnHandler(ret, res);
+});
+
 module.exports = Router;
