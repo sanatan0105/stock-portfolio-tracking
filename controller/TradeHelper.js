@@ -4,7 +4,7 @@ const SecurityModel = require('../model/SecurityModel');
 const PortfolioModel = require('../model/PortfolioModel');
 const CommonMethod = require('../lib/CommonMethods');
 const Winston = require('../config/Winston');
-
+const mongoose = require('mongoose');
 const CURRENT_PRICE = 100;
 
 module.exports = {
@@ -30,14 +30,14 @@ module.exports = {
              *          object
              * **/
 
-            // validation
+                // validation
             let validationResult = await module.exports.validateTrade(symbol, numberOfShares, true, sharePrice);
             if (validationResult.status === 'failed')
                 return ErrorHandler.userDefinedError(400, validationResult.message);
             if (validationResult.status === 'failedInCatch')
                 return ErrorHandler.parseError(validationResult.message);
 
-            let securityObj =  validationResult.securityObj;
+            let securityObj = validationResult.securityObj;
             let portfolioObj = await PortfolioModel.findOne({security: securityObj._id});
             if (!portfolioObj) {
                 // create new portfolio
@@ -85,10 +85,10 @@ module.exports = {
             if (validationResult.status === 'failedInCatch')
                 return ErrorHandler.parseError(validationResult.message);
 
-            let securityObj =  validationResult.securityObj;
+            let securityObj = validationResult.securityObj;
             let portfolioObj = await PortfolioModel.findOne({security: securityObj._id});
 
-            if(!portfolioObj)
+            if (!portfolioObj)
                 return ErrorHandler.userDefinedError(400, 'security not found in the portfolio');
 
             if (portfolioObj.numberOfShares < numberOfShares)
@@ -100,6 +100,79 @@ module.exports = {
             await portfolioObj.save();
             return {status: 'success', message: 'trade sold', other: portfolioObj}
 
+        } catch (e) {
+            return ErrorHandler.parseError(e);
+        }
+    },
+
+    RemoveTrade: async (tradeId) => {
+        try {
+            tradeId = mongoose.Types.ObjectId(tradeId);
+            let tradeDetails = await PortfolioModel.findOne({'trade.tradeId': tradeId});
+            let updatedPriceAndShares = module.exports.getPriceAndShareFromTrades(tradeDetails.trade, [tradeId.toString()]);
+            tradeDetails.numberOfShares = updatedPriceAndShares.updatedShares;
+            tradeDetails.averageBuyPrice = updatedPriceAndShares.updatedPrice;
+            tradeDetails.trade = updatedPriceAndShares.sortedTradeObjects;
+            await tradeDetails.save();
+            return tradeDetails;
+        } catch (e) {
+            return ErrorHandler.parseError(e);
+        }
+    },
+
+    UpdateTrade: async (tradeId, attributes) => {
+        try {
+            tradeId = mongoose.Types.ObjectId(tradeId);
+            if (!tradeId || !attributes)
+                return ErrorHandler.userDefinedError(400, 'tradeId and attributes are required');
+
+            let tradeDetails = await PortfolioModel.findOne({'trade.tradeId': tradeId}).populate('security', 'ticketSymbol');
+            if (!tradeDetails)
+                return ErrorHandler.userDefinedError(400, 'no record found with this tradeId');
+
+            let tradeObj = module.exports.getTradeObjFromPortfolioObj(tradeId, tradeDetails);
+            console.log(tradeObj);
+            let buyOrSell = tradeObj.buyOrSell;
+            let symbol, sharePrice, numberOfShares;
+            if ('symbol' in attributes) {
+                symbol = attributes['symbol'].toUpperCase();
+                let securityObj = await SecurityModel.findOne({ticketSymbol: symbol});
+                if (!securityObj)
+                    return ErrorHandler.userDefinedError(400, 'invalid security name passed');
+            } else {
+                symbol = tradeDetails.security.ticketSymbol;
+            }
+
+            if ('sharePrice' in attributes) {
+                sharePrice = attributes['sharePrice'];
+                let validatePrice = InputValidator.ValidateSharePrice(sharePrice);
+                if (validatePrice.status === 'failed')
+                    return ErrorHandler.userDefinedError(400, validatePrice.message);
+                if (validatePrice.status === 'failedInCatch')
+                    return ErrorHandler.parseError(validatePrice.message);
+            } else {
+                sharePrice = tradeObj.price;
+            }
+
+            if ('numberOfShares' in attributes) {
+                numberOfShares = attributes['numberOfShares'];
+                let validatePrice = InputValidator.ValidateQuantity(numberOfShares);
+                if (!validatePrice)
+                    return ErrorHandler.userDefinedError(400, 'invalid number of shared passed');
+            } else {
+                numberOfShares = tradeObj.numberOfShares;
+            }
+            await module.exports.RemoveTrade(tradeId);
+            let ret;
+            if(buyOrSell === 'buy') {
+
+                ret = await module.exports.BuyTrade(symbol, sharePrice, numberOfShares);
+            } else if(buyOrSell === 'sell') {
+
+                ret = await module.exports.SellTrade(symbol, numberOfShares);
+            }
+            ret.message = 'attribute updated';
+            return ret;
         } catch (e) {
             return ErrorHandler.parseError(e);
         }
@@ -188,6 +261,44 @@ module.exports = {
         }
     },
 
+    getPriceAndShareFromTrades: (tradeObjs, escapeTradeId = []) => {
+        try {
+            let updatedPrice = 0;
+            let updatedShares = 0;
+            let sortedTradeObjects = tradeObjs.sort((a, b) => a.dateOfPurchase - b.dateOfPurchase);
+            sortedTradeObjects.forEach((trade, i) => {
+                if (!escapeTradeId.includes(trade.tradeId.toString())) {
+                    if (trade.buyOrSell === 'buy') {
+                        updatedPrice = module.exports.getNewAverageBuyPrice(updatedPrice, updatedShares, trade.price, trade.numberOfShares);
+                        updatedShares += trade.numberOfShares;
+                    } else if (trade.buyOrSell === 'sell') {
+                        updatedShares -= trade.numberOfShares;
+                    }
+                } else {
+                    sortedTradeObjects.splice(i, 1);
+                }
+            });
+
+            return {updatedPrice, updatedShares, sortedTradeObjects};
+
+        } catch (e) {
+            return {status: 'failedInCatch', message: e};
+        }
+    },
+
+    getTradeObjFromPortfolioObj: (tradeId, portfolio) => {
+        // console.log(tradeId);
+        // console.log(portfolio);
+        let tradeObj = null;
+        portfolio.trade.forEach(tradeItem => {
+            console.log(tradeItem.tradeId.toString() === tradeId.toString());
+            if (tradeItem.tradeId.toString() === tradeId.toString()) {
+                tradeObj = tradeItem;
+            }
+        });
+        return tradeObj;
+    },
+
     validateTrade: async (symbol, numberOfShares, shouldValidatePrice, sharePrice = 0) => {
         try {
             /**
@@ -210,7 +321,7 @@ module.exports = {
              * 4. else return success object with security object
              * @return: failed object with message in case of validation error, else success object with security object
              * **/
-            if(shouldValidatePrice){
+            if (shouldValidatePrice) {
                 let _validateSharePrice = InputValidator.ValidateSharePrice(sharePrice);
                 if (_validateSharePrice.status === 'failed' || _validateSharePrice.status === 'failedInCatch')
                     return _validateSharePrice;
@@ -289,6 +400,8 @@ module.exports = {
          * SUM((CURRENT_PRICE[ticker] - AVERAGE_BUY_PRICE[ticker]) *CURRENT_QUANTITY[ticker])
          * @return: updated average buying price
          * **/
+        console.log();
+
         return (oldAvgPrice * oldNumberOfShares + newNumberOfShares * newSharePrice) / (oldNumberOfShares + newNumberOfShares)
     },
 

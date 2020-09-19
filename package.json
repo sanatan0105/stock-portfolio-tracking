@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "start": "nodemon ./bin/www",
-    "test": "nyc mocha ./test/**/*.js --timeout 10000"
+    "test": "nyc mocha ./test/**/*.js --timeout 1000000"
   },
   "dependencies": {
     "app-root-path": "^3.0.0",
