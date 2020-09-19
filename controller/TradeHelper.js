@@ -107,6 +107,20 @@ module.exports = {
 
     RemoveTrade: async (tradeId) => {
         try {
+            /**
+             * This method is used to remove the trade from a particular security in the portfolio
+             * @augments:
+             * 1. tradeId: The trade id which we want to remove
+             * @steps:
+             * 1. Convert the string tradeId to mongoDB objectId
+             * 2. Collect the details of the trade from the PortfolioModel using tradeId
+             * 3. Get updated trades, updated price and updated number of shared using getPriceAndShareFromTrades
+             * 4. Set the values to the tradeDetails object
+             * 5. Call the save method to save the updated trades
+             * 6. Return the updated trade details
+             * @return: Failed response with message is any error occurred else
+             * Return the trades of the particular security
+             * **/
             tradeId = mongoose.Types.ObjectId(tradeId);
             let tradeDetails = await PortfolioModel.findOne({'trade.tradeId': tradeId});
             let updatedPriceAndShares = module.exports.getPriceAndShareFromTrades(tradeDetails.trade, [tradeId.toString()]);
@@ -122,6 +136,31 @@ module.exports = {
 
     UpdateTrade: async (tradeId, attributes) => {
         try {
+
+            /**
+             * This method is used to update the trade
+             * @augments:
+             * 1. tradeId: The trade id which we need to update
+             * 2. attributes: all the attributes which we need to update. Below are the list of attributes which can be
+             *      updated
+             *      2.1. symbol
+             *      2.2. sharePrice
+             *      2.3. numberOfShares
+             *
+             * @steps:
+             * 1. Check if the id and attribute object is passed in the method
+             * 2. Check if any trade is there or not with this tradeId. If not return failed response
+             * 3. Get trade object from the portfolio object using getTradeObjFromPortfolioObj method
+             * 4. Validate the SYMBOL attribute if passed else set SYMBOL from the tradeObj returned previously
+             * 5. Validate the sharePrice attribute if passed else set sharePrice from the tradeObj returned previously
+             * 6. Validate the numberOfShares attribute if passed else set numberOfShares from the tradeObj returned previously
+             * 7. Delete this trade using RemoveTrade Method
+             * 8. If this trade was a buying trade previously call BuyTrade method with the updated arguments
+             * 9. If this trade was a selling trade previously call SellTrade method with the updated arguments
+             * @return: Failed response with message is any error occured else
+             * Return the trades of the particular security
+             * **/
+
             tradeId = mongoose.Types.ObjectId(tradeId);
             if (!tradeId || !attributes)
                 return ErrorHandler.userDefinedError(400, 'tradeId and attributes are required');
@@ -131,7 +170,6 @@ module.exports = {
                 return ErrorHandler.userDefinedError(400, 'no record found with this tradeId');
 
             let tradeObj = module.exports.getTradeObjFromPortfolioObj(tradeId, tradeDetails);
-            console.log(tradeObj);
             let buyOrSell = tradeObj.buyOrSell;
             let symbol, sharePrice, numberOfShares;
             if ('symbol' in attributes) {
@@ -162,6 +200,7 @@ module.exports = {
             } else {
                 numberOfShares = tradeObj.numberOfShares;
             }
+
             await module.exports.RemoveTrade(tradeId);
             let ret;
             if(buyOrSell === 'buy') {
@@ -263,6 +302,15 @@ module.exports = {
 
     getPriceAndShareFromTrades: (tradeObjs, escapeTradeId = []) => {
         try {
+            /**
+             * This method is used to return the updated share price and number of shares if we remove some trades from the
+             * security
+             * @augments:
+             * 1. tradeObjs: List of all the trades of a particular security
+             * 2. escapeTradeId: a list of trade ids which we need to remove
+             * @return: returns an object with updatedPrice, updatedShares, sortedTradeObjects as key
+             * **/
+
             let updatedPrice = 0;
             let updatedShares = 0;
             let sortedTradeObjects = tradeObjs.sort((a, b) => a.dateOfPurchase - b.dateOfPurchase);
@@ -287,11 +335,15 @@ module.exports = {
     },
 
     getTradeObjFromPortfolioObj: (tradeId, portfolio) => {
-        // console.log(tradeId);
-        // console.log(portfolio);
+        /**
+         * This method is used to return the trade object of portfolio
+         * @augments:
+         * 1. tradeId
+         * 2. portfolio: portfolio object which includes this trade
+         * @return: returns the trade object if found else return null
+         * **/
         let tradeObj = null;
         portfolio.trade.forEach(tradeItem => {
-            console.log(tradeItem.tradeId.toString() === tradeId.toString());
             if (tradeItem.tradeId.toString() === tradeId.toString()) {
                 tradeObj = tradeItem;
             }
