@@ -19,6 +19,7 @@ Router.get('/', async (req, res) => {
 
 Router.get('/getById/:id', async (req, res) => {
     let securityId = req.params.id;
+    console.log(securityId);
     let security = await SecurityHelper.getSecurityById(securityId);
     ReturnHandler.returnHandler(security, res);
 });

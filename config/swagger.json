@@ -1,0 +1,736 @@
+{
+  "openapi": "3.0.0",
+
+  "info": {
+    "version": "1.0.0",
+    "title": "Portfolio Tracking API",
+    "description": "A Portfolio tracking api which can be used to buy and sell trades of companies",
+    "contact": {
+      "name": "Sanatan Bhardwaj",
+      "email": "sanatan0105@gmail.com",
+      "url": "http://shopay.in"
+    },
+    "license": {
+      "name": "Apache 2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0.html"
+    }
+  },
+  "servers": [
+    {
+      "url": "http://localhost:4000/",
+      "description": "Local server"
+    },
+    {
+      "url": "https://api_url_production",
+      "description": "Production server"
+    }
+  ],
+
+  "tags": [
+    {
+      "name": "Security",
+      "description": "API for Security in the system"
+    },
+    {
+      "name": "Portfolio",
+      "description": "API for Portfolio in the system"
+    },
+    {
+      "name": "Trade",
+      "description": "API for Trade in the system"
+    }
+  ],
+
+  "consumes": [
+    "application/json"
+  ],
+
+  "produces": [
+    "application/json"
+  ],
+
+  "paths": {
+
+    "/security": {
+      "get": {
+        "tags": [
+          "Security"
+        ],
+        "summary": "Get all Securities in system",
+        "description": "Use this api to get all the list of security in the system. We are assuming here that the list won't increase more than 100 securities. So query optimization is not considered here",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/Securities"
+            }
+          },
+          "500": {
+            "description": "Failed. Server error",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+
+    "/security/getById/{id}": {
+      "get": {
+        "tags": [
+          "Security"
+        ],
+        "summary": "Get Security with given Security ID",
+        "description": "Get the details of a security by providing the api. If invalid id is provided, 404 error will come, else a valid object of single security will come.",
+        "parameters": [
+          {
+            "name": "id",
+            "in": "path",
+            "required": true,
+            "description": "Security ID of the security that we want to match",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/Cat"
+            }
+          },
+          "404": {
+            "description": "Failed. Security not found.",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "500": {
+            "description": "Failed. Server error",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+
+    "/security/create": {
+      "post": {
+        "tags": [
+          "Security"
+        ],
+        "summary": "Create a new Security in the system",
+        "description": "Use this api to create a new Security in the system. Parameters are required. [companyName, ticketSymbol, sharePrice]. ",
+        "requestBody": {
+          "description": "Security Object",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/definitions/security"
+              }
+            }
+          }
+        },
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/id"
+            }
+          },
+          "404": {
+            "description": "Failed. Security not found.",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "500": {
+            "description": "Failed. Server error",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+
+    "/portfolio/getPortfolio": {
+      "get": {
+        "tags": [
+          "Portfolio"
+        ],
+        "summary": "Get all Securities in the portfolio",
+        "description": "Use this api to get all the securities in the portfolio with the trades associated with the same.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/Portfolio"
+            }
+          },
+          "404": {
+            "description": "Failed. Security not found.",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "500": {
+            "description": "Failed. Server error",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+
+    "/portfolio/getReturn": {
+      "get": {
+        "tags": [
+          "Portfolio"
+        ],
+        "summary": "Get the overall return at any point of time",
+        "description": "This API call respond with cumulative returns at any point of time of a particular portfolio. Formula for calculating cumulative returns is SUM((CURRENT_PRICE[ticker] - AVERAGE_BUY_PRICE[ticker]) * CURRENT_QUANTITY[ticker]). Since in API don’t have access to the current price of any security, we are assuming the current price is always Rs. 100 for any security.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/Return"
+            }
+          },
+          "404": {
+            "description": "Failed. Security not found.",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "500": {
+            "description": "Failed. Server error",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+
+    "/portfolio/getHolding": {
+      "get": {
+        "tags": [
+          "Portfolio"
+        ],
+        "summary": "Get Holding",
+        "description": "Use this api to get the holding of the user which is an aggregate view of all securities in the portfolio with its final quantity and average buy price.",
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/Holding"
+            }
+          },
+          "404": {
+            "description": "Failed. Security not found.",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "500": {
+            "description": "Failed. Server error",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+
+    "/trade/buyTrade": {
+      "post": {
+        "tags": [
+          "Trade"
+        ],
+        "summary": "Buy trade",
+        "description": "Use this api to buy the trades in the available securities. With this portfolio will get updated automatically.",
+        "requestBody": {
+          "description": "Trade Object",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/definitions/CreateTrade"
+              }
+            }
+          }
+        },
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/CreateTradeReturn"
+            }
+          },
+          "404": {
+            "description": "Failed. Security not found.",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "500": {
+            "description": "Failed. Server error",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+
+    "/trade/sellTrade": {
+      "post": {
+        "tags": [
+          "Trade"
+        ],
+        "summary": "Sell trade",
+        "description": "Use this api to sell the trades in the available securities. With this portfolio will get updated automatically. You can't sell more shares then you own it",
+        "requestBody": {
+          "description": "Trade Object",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/definitions/SellTrade"
+              }
+            }
+          }
+        },
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/id"
+            }
+          },
+          "404": {
+            "description": "Failed. Security not found.",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "500": {
+            "description": "Failed. Server error",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+
+    "/trade/removeTrade/{tradeId}": {
+      "delete": {
+        "tags": [
+          "Trade"
+        ],
+        "summary": "Remove trade",
+        "description": "Use this api to remove a trade, this will be deleting the trade entirely while updating the portfolio as if this trade never happened.",
+        "parameters": [
+          {
+            "name": "tradeId",
+            "in": "path",
+            "required": true,
+            "description": "trade ID of the trade that we want to match",
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Trade removed from the security in portfolio",
+            "schema": {
+              "$ref": "#/definitions/TradeRemoved"
+            }
+          },
+          "404": {
+            "description": "Failed. Security not found.",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "500": {
+            "description": "Failed. Server error",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    },
+
+    "/trade/updateTrade/{tradeId}": {
+      "post": {
+        "tags": [
+          "Trade"
+        ],
+        "parameters": [
+          {
+            "name": "tradeId",
+            "in": "path",
+            "required": true,
+            "description": "trade ID of the trade that we want to match",
+            "type": "string"
+          }
+        ],
+        "summary": "Update a trade",
+        "description": "Use this api to update the already placed trades. ",
+        "requestBody": {
+          "description": "Trade Object",
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/definitions/UpdateTrade"
+              }
+            }
+          }
+        },
+        "produces": [
+          "application/json"
+        ],
+        "responses": {
+          "200": {
+            "description": "OK",
+            "schema": {
+              "$ref": "#/definitions/CreateTradeReturn"
+            }
+          },
+          "404": {
+            "description": "Failed. Security not found.",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          },
+          "500": {
+            "description": "Failed. Server error",
+            "schema": {
+              "$ref": "#/definitions/Error"
+            }
+          }
+        }
+      }
+    }
+  },
+
+  "definitions": {
+    "Holding": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "message": {
+          "type": "object",
+          "properties": {
+            "totalSecurities": {
+              "type": "number"
+            },
+            "totalShares": {
+              "type": "number"
+            },
+            "averagePrice": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    },
+    "Return": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "message": {
+          "type": "number"
+        }
+      }
+    },
+    "Trade": {
+      "type": "object",
+      "properties": {
+        "tradeId": {
+          "type": "string"
+        },
+        "price": {
+          "type": "number"
+        },
+        "numberOfShares": {
+          "type": "number"
+        },
+        "buyOrSell": {
+          "type": "string"
+        },
+        "dateOfPurchase": {
+          "type": "string"
+        }
+      }
+    },
+    "UpdateTrade": {
+      "type": "object",
+      "properties": {
+        "symbol": {
+          "type": "string"
+        },
+        "sharePrice": {
+          "type": "number"
+        },
+        "numberOfShares": {
+          "type": "number"
+        },
+        "buyOrSell": {
+          "type": "string",
+          "description": "[buy, sell] two values are allowed here"
+        }
+      }
+    },
+    "CreateTrade": {
+      "type": "object",
+      "properties": {
+        "symbol": {
+          "type": "string"
+        },
+        "sharePrice": {
+          "type": "number"
+        },
+        "numberOfShares": {
+          "type": "number"
+        }
+      }
+    },
+    "CreateTradeReturn": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "message": {
+          "type": "string"
+        },
+        "other": {
+          "type": "object",
+          "properties": {
+            "trade": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "$ref": "#/definitions/Trade"
+                }
+              }
+            }
+          },
+          "numberOfShares": {
+            "type": "number"
+          },
+          "averageBuyPrice": {
+            "type": "number"
+          },
+          "_id": {
+            "type": "string"
+          },
+          "security": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "TradeRemoved": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "type": "string"
+        },
+        "tradeDetails": {
+          "type": "object",
+          "properties": {
+            "trade": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "$ref": "#/definitions/Trade"
+                }
+              }
+            }
+          },
+          "numberOfShares": {
+            "type": "number"
+          },
+          "averageBuyPrice": {
+            "type": "number"
+          },
+          "_id": {
+            "type": "string"
+          },
+          "security": {
+            "type": "string"
+          },
+          "createdAt": {
+            "type": "string"
+          },
+          "updatedAt": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "SellTrade": {
+      "type": "object",
+      "properties": {
+        "symbol": {
+          "type": "string"
+        },
+        "numberOfShares": {
+          "type": "number"
+        }
+      }
+    },
+    "Portfolio": {
+      "type": "object",
+      "properties": {
+        "numberOfShares": {
+          "type": "number"
+        },
+        "averageBuyPrice": {
+          "type": "number"
+        },
+        "_id": {
+          "type": "string"
+        },
+        "createdAt": {
+          "type": "string"
+        },
+        "updatedAt": {
+          "type": "string"
+        },
+        "trade": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "$ref": "#/definitions/Trade"
+            }
+          }
+        },
+        "security": {
+          "type": "object",
+          "properties": {
+            "_id": {
+              "type": "string"
+            },
+            "ticketSymbol": {
+              "type": "string"
+            },
+            "sharePrice": {
+              "type": "number"
+            }
+          }
+        }
+      }
+    },
+    "security": {
+      "required": [
+        "companyName",
+        "ticketSymbol",
+        "sharePrice"
+      ],
+      "properties": {
+        "companyName": {
+          "type": "string"
+        },
+        "ticketSymbol": {
+          "type": "string"
+        },
+        "sharePrice": {
+          "type": "number"
+        }
+      }
+    },
+    "id": {
+      "properties": {
+        "uuid": {
+          "type": "string"
+        }
+      }
+    },
+    "Cat": {
+      "type": "object",
+      "properties": {
+        "genus": {
+          "type": "string"
+        },
+        "name": {
+          "type": "string"
+        },
+        "isHungry": {
+          "type": "boolean"
+        },
+        "lastFedDate": {
+          "type": "string"
+        }
+      }
+    },
+    "Securities": {
+      "type": "object",
+      "properties": {
+        "securities": {
+          "type": "object",
+          "properties": {
+            "companyName": {
+              "type": "string"
+            },
+            "ticketSymbol": {
+              "type": "string"
+            },
+            "sharePrice": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "Error": {
+      "type": "object",
+      "properties": {
+        "error": {
+          "type": "object",
+          "properties": {
+            "type": {
+              "type": "string"
+            },
+            "status": {
+              "type": "number"
+            },
+            "message": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    }
+  }
+}

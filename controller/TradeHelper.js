@@ -128,7 +128,7 @@ module.exports = {
             tradeDetails.averageBuyPrice = updatedPriceAndShares.updatedPrice;
             tradeDetails.trade = updatedPriceAndShares.sortedTradeObjects;
             await tradeDetails.save();
-            return tradeDetails;
+            return {status: "success", tradeDetails};
         } catch (e) {
             return ErrorHandler.parseError(e);
         }
@@ -146,6 +146,7 @@ module.exports = {
              *      2.1. symbol
              *      2.2. sharePrice
              *      2.3. numberOfShares
+             *      3.4: sellOrBuy
              *
              * @steps:
              * 1. Check if the id and attribute object is passed in the method
@@ -170,8 +171,8 @@ module.exports = {
                 return ErrorHandler.userDefinedError(400, 'no record found with this tradeId');
 
             let tradeObj = module.exports.getTradeObjFromPortfolioObj(tradeId, tradeDetails);
-            let buyOrSell = tradeObj.buyOrSell;
-            let symbol, sharePrice, numberOfShares;
+
+            let symbol, sharePrice, numberOfShares, buyOrSell;
             if ('symbol' in attributes) {
                 symbol = attributes['symbol'].toUpperCase();
                 let securityObj = await SecurityModel.findOne({ticketSymbol: symbol});
@@ -199,6 +200,12 @@ module.exports = {
                     return ErrorHandler.userDefinedError(400, 'invalid number of shared passed');
             } else {
                 numberOfShares = tradeObj.numberOfShares;
+            }
+
+            if ('buyOrSell' in attributes) {
+                buyOrSell = attributes['buyOrSell'];
+            } else {
+                buyOrSell = tradeObj.buyOrSell;
             }
 
             await module.exports.RemoveTrade(tradeId);

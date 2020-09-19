@@ -90,8 +90,11 @@ module.exports = {
              * @return: return the security obj if security if found with the id else null will get returned
              * **/
 
-            let securities = await SecurityModel.findById(id);
-            return {status: 'success', security: securities}
+            let security = await SecurityModel.findById(id);
+            if(!security)
+                return ErrorHandler.userDefinedError(404, 'security not found with the given id');
+
+            return {status: 'success', security: security}
 
         } catch (e) {
             return ErrorHandler.parseError(e);
