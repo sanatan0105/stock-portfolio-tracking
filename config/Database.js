@@ -1,7 +1,5 @@
-console.log(process.env.NODE_ENV);
 let mongoose = require('mongoose');
 const Config = require('./Config');
-console.log('13');
 
 const Winston = require('./Winston');
 class Database {
