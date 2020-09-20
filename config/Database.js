@@ -3,6 +3,7 @@ console.log(process.env.NODE_ENV);
 let mongoose = require('mongoose');
 console.log('12');
 const Config = require('./config');
+console.log(Config());
 console.log('13');
 
 const Winston = require('./winston');
