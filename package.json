@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "nodemon ./bin/www",
+    "start": "node ./bin/www",
     "test": "nyc mocha ./test/**/*.js --timeout 1000000"
   },
   "dependencies": {
