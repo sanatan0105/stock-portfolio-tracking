@@ -9,6 +9,7 @@ require('dotenv').config({path: './config/.env'});
 const swaggerUi = require('swagger-ui-express');
 const swaggerDocument = require('./config/swagger');
 const app = express();
+const Winston = require('./config/Winston');
 
 app.use(morgan('combined', { stream: winston.stream }));
 
@@ -29,6 +30,10 @@ app.use(function(err, req, res, next) {
   res.locals.error = req.app.get('env') === 'development' ? err : {};
   res.status(err.status || 500);
   res.render('error');
+});
+
+app.listen(4001, function () {
+  Winston.info('Example app listening on port 4001!');
 });
 
 module.exports = app;
