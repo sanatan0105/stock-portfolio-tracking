@@ -1,5 +1,8 @@
+console.log('11')
 let mongoose = require('mongoose');
+console.log('12')
 const Config = require('./config');
+console.log('13');
 const Winston = require('./winston');
 class Database {
     constructor() {
@@ -21,9 +24,11 @@ class Database {
             useUnifiedTopology: true
         }).
         then(() => {
+            console.log('Database connection successful');
             Winston.info('Database connection successful');
         }).
         catch(err => {
+            console.log('Database connection error'+err);
             Winston.error('Database connection error'+err)
         })
     }
