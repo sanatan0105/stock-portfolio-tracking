@@ -1,8 +1,10 @@
-console.log('11')
+console.log('11');
+console.log(process.env.NODE_ENV);
 let mongoose = require('mongoose');
-console.log('12')
+console.log('12');
 const Config = require('./config');
 console.log('13');
+
 const Winston = require('./winston');
 class Database {
     constructor() {
