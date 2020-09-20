@@ -73,10 +73,8 @@ module.exports = {
              * @augments: No argument is required
              * @return: returns all the security
              * **/
-
             let securities = await SecurityModel.find();
             return {status: 'success', securities: securities}
-
         } catch (e) {
             return ErrorHandler.parseError(e);
         }

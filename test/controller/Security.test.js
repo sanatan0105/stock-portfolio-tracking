@@ -7,6 +7,7 @@ const should = chai.should();
 const expect = chai.expect;
 const SecurityModel = require('../../model/SecurityModel');
 const PortfolioModel = require('../../model/PortfolioModel');
+const CommonMethod = require('../../lib/CommonMethods');
 
 
 describe('#Test cases for createObjForSecurity of SecurityHelper Module', () => {
@@ -98,9 +99,6 @@ describe('#Test Cases for createSecurity of SecurityHelper module', async () => 
 
 
     after( (done) => {
-        // await PortfolioModel.deleteMany({});
-        // await SecurityModel.deleteMany({});
-        // return mongoose.connection.db.dropDatabase(done);
         return mongoose.disconnect(done);
     });
 });
@@ -142,11 +140,20 @@ describe('#Test cases for getSecurities of SecurityHelper module', async () => {
             });
     });
 
+    it('Returns error', async ()=>{
+        let result = await SecurityHelper.getSecurityById(CommonMethod.generateId());
+        result.type.should.equal('error');
+        result.status.should.equal(404);
+        result.message.should.equal('security not found with the given id');
+
+        // expect(result).to.throw('Cast to ObjectId failed for value "12312313412" at path "_id" for model "SecurityModel"')
+    });
+
     it('returns all the list of security in the security collection', async () => {
         securities.should.be.a('object');
         securities.status.should.equal('success');
         securities.securities.should.be.a('array');
-        // securities.securities.length.should.equal(securityObj.length);
+        securities.securities.length.should.equal(securityObj.length);
     });
 
     //getSecurityById

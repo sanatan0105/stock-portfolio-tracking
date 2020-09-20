@@ -123,10 +123,12 @@ module.exports = {
              * **/
             tradeId = mongoose.Types.ObjectId(tradeId);
             let tradeDetails = await PortfolioModel.findOne({'trade.tradeId': tradeId});
+            if(!tradeDetails)
+                return ErrorHandler.userDefinedError(404, 'document not found');
             let updatedPriceAndShares = module.exports.getPriceAndShareFromTrades(tradeDetails.trade, [tradeId.toString()]);
             tradeDetails.numberOfShares = updatedPriceAndShares.updatedShares;
             tradeDetails.averageBuyPrice = updatedPriceAndShares.updatedPrice;
-            tradeDetails.trade = updatedPriceAndShares.sortedTradeObjects;
+            tradeDetails.trade = updatedPriceAndShares.tradeList;
             await tradeDetails.save();
             return {status: "success", tradeDetails};
         } catch (e) {
@@ -162,10 +164,11 @@ module.exports = {
              * Return the trades of the particular security
              * **/
 
-            tradeId = mongoose.Types.ObjectId(tradeId);
+
             if (!tradeId || !attributes)
                 return ErrorHandler.userDefinedError(400, 'tradeId and attributes are required');
 
+            tradeId = mongoose.Types.ObjectId(tradeId);
             let tradeDetails = await PortfolioModel.findOne({'trade.tradeId': tradeId}).populate('security', 'ticketSymbol');
             if (!tradeDetails)
                 return ErrorHandler.userDefinedError(400, 'no record found with this tradeId');
@@ -204,6 +207,8 @@ module.exports = {
 
             if ('buyOrSell' in attributes) {
                 buyOrSell = attributes['buyOrSell'];
+                if(!['buy', 'sell'].includes(buyOrSell))
+                    return ErrorHandler.userDefinedError(400, 'invalid value for buyOrSell attribute. Allowed values are [buy, sell]')
             } else {
                 buyOrSell = tradeObj.buyOrSell;
             }
@@ -317,11 +322,13 @@ module.exports = {
              * 2. escapeTradeId: a list of trade ids which we need to remove
              * @return: returns an object with updatedPrice, updatedShares, sortedTradeObjects as key
              * **/
-
             let updatedPrice = 0;
             let updatedShares = 0;
             let sortedTradeObjects = tradeObjs.sort((a, b) => a.dateOfPurchase - b.dateOfPurchase);
+
+            let updatedTrade = [];
             sortedTradeObjects.forEach((trade, i) => {
+
                 if (!escapeTradeId.includes(trade.tradeId.toString())) {
                     if (trade.buyOrSell === 'buy') {
                         updatedPrice = module.exports.getNewAverageBuyPrice(updatedPrice, updatedShares, trade.price, trade.numberOfShares);
@@ -329,12 +336,11 @@ module.exports = {
                     } else if (trade.buyOrSell === 'sell') {
                         updatedShares -= trade.numberOfShares;
                     }
-                } else {
-                    sortedTradeObjects.splice(i, 1);
+                    updatedTrade.push(trade);
                 }
             });
 
-            return {updatedPrice, updatedShares, sortedTradeObjects};
+            return {updatedPrice, updatedShares, tradeList: updatedTrade};
 
         } catch (e) {
             return {status: 'failedInCatch', message: e};
@@ -459,8 +465,6 @@ module.exports = {
          * SUM((CURRENT_PRICE[ticker] - AVERAGE_BUY_PRICE[ticker]) *CURRENT_QUANTITY[ticker])
          * @return: updated average buying price
          * **/
-        console.log();
-
         return (oldAvgPrice * oldNumberOfShares + newNumberOfShares * newSharePrice) / (oldNumberOfShares + newNumberOfShares)
     },
 
