@@ -8,6 +8,7 @@
   },
   "dependencies": {
     "app-root-path": "^3.0.0",
+    "chai-http": "^4.3.0",
     "chalk": "^4.1.0",
     "cookie-parser": "~1.4.4",
     "dateformat": "^3.0.3",

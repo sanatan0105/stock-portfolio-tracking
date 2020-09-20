@@ -1,5 +1,4 @@
 let CommonMethod = require('../../lib/CommonMethods');
-let assert = require('assert');
 let chai = require('chai');
 const mongoose = require('mongoose');
 let should = chai.should();
