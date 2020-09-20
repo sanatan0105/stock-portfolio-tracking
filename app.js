@@ -31,9 +31,4 @@ app.use(function(err, req, res, next) {
   res.render('error');
 });
 
-
-let port = process.env.PORT || 4000;
-app.listen(port);
-console.log('server started ' + port);
-
 module.exports = app;

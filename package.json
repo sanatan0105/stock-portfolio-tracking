@@ -3,7 +3,7 @@
   "version": "0.0.0",
   "private": true,
   "scripts": {
-    "start": "node app.js",
+    "start": "nodemon ./bin/www",
     "test": "nyc mocha ./test/**/*.js --timeout 1000000"
   },
   "dependencies": {
