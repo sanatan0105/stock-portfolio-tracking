@@ -21,7 +21,7 @@
       "description": "Local server"
     },
     {
-      "url": "https://api_url_production",
+      "url": "http://143.110.180.166/",
       "description": "Production server"
     }
   ],
