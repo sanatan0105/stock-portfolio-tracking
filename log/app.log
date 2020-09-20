@@ -2764,3 +2764,6 @@
 {"message":"::1 - - [20/Sep/2020:12:22:02 +0000] \"GET / HTTP/1.1\" 304 - \"-\" \"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.102 Safari/537.36\"\n","level":"info"}
 {"message":"::1 - - [20/Sep/2020:12:22:02 +0000] \"GET /favicon.ico HTTP/1.1\" 304 - \"http://localhost:4000/\" \"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.102 Safari/537.36\"\n","level":"info"}
 {"message":"Database connection successful","level":"info"}
+{"message":"Database connection successful","level":"info"}
+{"message":"::1 - - [20/Sep/2020:12:29:16 +0000] \"GET / HTTP/1.1\" 304 - \"-\" \"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.102 Safari/537.36\"\n","level":"info"}
+{"message":"::1 - - [20/Sep/2020:12:29:17 +0000] \"GET /favicon.ico HTTP/1.1\" 200 16 \"http://localhost:4000/\" \"Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_0) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/85.0.4183.102 Safari/537.36\"\n","level":"info"}
