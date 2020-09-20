@@ -1,12 +1,9 @@
-console.log('11');
 console.log(process.env.NODE_ENV);
 let mongoose = require('mongoose');
-console.log('12');
 const Config = require('./Config');
-console.log(Config());
 console.log('13');
 
-const Winston = require('./winston');
+const Winston = require('./Winston');
 class Database {
     constructor() {
         this._connect()
