@@ -13,6 +13,7 @@ Router.post('/create', async (req, res) => {
 });
 
 Router.get('/', async (req, res) => {
+    console.log('1');
     let securities = await SecurityHelper.getSecurities();
     ReturnHandler.returnHandler(securities, res);
 });
